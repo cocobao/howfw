@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cocobao/howfw/util"
 	"github.com/cocobao/log"
-	"spm.pub/cloud/deev/utils"
 )
 
 func readLoop(c WriteCloser, wg *sync.WaitGroup) {
@@ -40,7 +40,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	defer func() {
 		if p := recover(); p != nil {
 			log.Errorf("panics: %v\n", p)
-			utils.PrintStack()
+			util.PrintStack()
 		}
 		wg.Done()
 		log.Debug("readLoop go-routine exited")
@@ -122,7 +122,7 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 	defer func() {
 		if p := recover(); p != nil {
 			log.Errorf("panics: %v\n", p)
-			utils.PrintStack()
+			util.PrintStack()
 		}
 	OuterFor:
 		for {

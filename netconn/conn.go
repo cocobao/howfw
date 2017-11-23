@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cocobao/howfw/util"
 	"github.com/cocobao/log"
-	"spm.pub/cloud/deev/utils"
 )
 
 func NewServerConn(id int64, s *Server, c net.Conn) *ServerConn {
@@ -143,7 +143,7 @@ func asyncWrite(c interface{}, m []byte) (err error) {
 	defer func() {
 		if p := recover(); p != nil {
 			fmt.Println(p)
-			utils.PrintStack()
+			util.PrintStack()
 		}
 	}()
 

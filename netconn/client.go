@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cocobao/howfw/util"
 	"github.com/cocobao/log"
 )
 
@@ -74,14 +75,14 @@ func newClientConnWithOptions(netid int64, addr string, opts options) *ClientCon
 
 func (cc *ClientConn) SetHeartBeat(heart int64) {
 	cc.mu.Lock()
+	defer cc.mu.Unlock()
 	cc.heart = heart
-	cc.mu.Unlock()
 }
 
 func (cc *ClientConn) HeartBeat() int64 {
 	cc.mu.Lock()
+	defer cc.mu.Unlock()
 	heart := cc.heart
-	cc.mu.Unlock()
 	return heart
 }
 
@@ -125,6 +126,7 @@ func (cc *ClientConn) Close() {
 		close(cc.sendCh)
 
 		if cc.opts.reconnect {
+			util.Wait(5)
 			cc.reconnect()
 		}
 	})

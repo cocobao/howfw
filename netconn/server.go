@@ -20,6 +20,10 @@ var (
 	tlsWrapper    func(net.Conn) net.Conn
 )
 
+func IndId() int64 {
+	return netIdentifier.GetAndIncrement()
+}
+
 func ReconnectOption() ServerOption {
 	return func(o *options) {
 		o.reconnect = true
@@ -114,8 +118,8 @@ type Server struct {
 	cancel context.CancelFunc
 }
 
-func (s *Server) Start(port int) error {
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", "0.0.0.0", port))
+func (s *Server) Start(port string) error {
+	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", port))
 	if err != nil {
 		return fmt.Errorf("listen error", err)
 	}
@@ -150,7 +154,7 @@ func (s *Server) Start(port int) error {
 			rawConn = tls.Server(rawConn, s.opts.tlsCfg)
 		}
 
-		netid := netIdentifier.GetAndIncrement()
+		netid := IndId()
 		sc := NewServerConn(netid, s, rawConn)
 		s.conns.Store(netid, sc)
 

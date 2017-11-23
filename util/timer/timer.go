@@ -12,12 +12,12 @@ type OnTimeOut struct {
 	Ctx      context.Context
 }
 
-func NewOnTimeOut(ctx context.Context, cb func(time.Time, WriteCloser)) *OnTimeOut {
-	return &OnTimeOut{
-		Callback: cb,
-		Ctx:      ctx,
-	}
-}
+// func NewOnTimeOut(ctx context.Context, cb func(time.Time, WriteCloser)) *OnTimeOut {
+// 	return &OnTimeOut{
+// 		Callback: cb,
+// 		Ctx:      ctx,
+// 	}
+// }
 
 type timerType struct {
 	id         int64
@@ -117,21 +117,11 @@ func (tw *TimingWheel) getExpired() []*timerType {
 	return expired
 }
 
-func (tw *TimingWheel) TimeOutChannel() chan *OnTimeOut {
-	return tw.timeOutChan
-}
-
 func (tw *TimingWheel) update(timers []*timerType) {
 	if timers != nil {
 		for _, t := range timers {
 			//是否需要重复定时
 			if t.isRepeat() {
-				t.expiration = t.expiration.Add(t.interval)
-				// if task time out for at least 10 seconds, the expiration time needs
-				// to be updated in case this task executes every time timer wakes up.
-				if time.Since(t.expiration).Seconds() >= 10.0 {
-					t.expiration = time.Now()
-				}
 				//重新压栈
 				heap.Push(&tw.timers, t)
 			}
@@ -163,8 +153,15 @@ func (tw *TimingWheel) start() {
 			//检测是否有定时器到超时时间
 		case <-tw.ticker.C:
 			timers := tw.getExpired()
+			now := time.Now()
+
 			for _, t := range timers {
-				tw.TimeOutChannel() <- t.timeout
+				expiration := t.expiration.Add(t.interval)
+
+				if now.Unix() >= expiration.Unix() {
+					t.timeout.Callback(now, nil)
+					t.expiration = now
+				}
 			}
 			tw.update(timers)
 		}

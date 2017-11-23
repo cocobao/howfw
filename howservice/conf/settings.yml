@@ -1,0 +1,13 @@
+---
+
+local_host: "192.168.1.102:20090"
+service_host: "192.168.1.102:20091"
+
+etcd_server: #etcd服务配置
+ endpoints:
+  - "http://10.10.18.156:22379"
+  - "http://10.10.18.156:2379"
+  - "http://10.10.18.156:32379"
+ dial_timeout:  50 #超时时间秒为单位
+ user_name: "root"
+ password: "12345678"
