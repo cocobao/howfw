@@ -40,6 +40,8 @@ func login(mapData map[string]interface{}, conn netconn.WriteCloser) {
 			"cmd":    "login",
 			"status": 200,
 		}, conn)
+
+		SyncOnlineToManager(v)
 	}
 }
 

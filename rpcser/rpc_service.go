@@ -18,29 +18,55 @@ var (
 	etcdClient *clientv3.Client
 )
 
+type ServiceClisInfo struct {
+	Client  *rpcx.Client
+	MapData map[string]interface{}
+	DevList []string
+}
+
 type RpcxClis struct {
 	PrefixName string
-	Clients    map[string]*rpcx.Client
-	MapData    map[string]map[string]interface{}
-	devList    map[string][]string
+	ClientsMap map[string]*ServiceClisInfo
+}
+
+func (r *RpcxClis) AddDev(host string, did string) {
+	k := path.Join(r.PrefixName, host)
+	if v, ok := r.ClientsMap[k]; ok {
+		log.Debugf("add dev, service:%s, did:%s", host, did)
+		v.DevList = append(v.DevList, did)
+	}
+}
+
+func (r *RpcxClis) DecDev(host string, did string) {
+	k := path.Join(r.PrefixName, host)
+	if v, ok := r.ClientsMap[k]; ok {
+		log.Debugf("dec dev, service:%s, did:%s", host, did)
+		for i, devid := range v.DevList {
+			if devid == did {
+				v.DevList = append(v.DevList[:i], v.DevList[i+1:]...)
+				return
+			}
+		}
+	}
 }
 
 func (r *RpcxClis) ApplyServiceHost() string {
-	if r.Clients == nil || len(r.Clients) == 0 {
+	if r.ClientsMap == nil || len(r.ClientsMap) == 0 {
 		return ""
 	}
+
 	less := math.MaxUint32
 	kk := ""
-	for k, v := range r.devList {
-		l := len(v)
+	for k, v := range r.ClientsMap {
+		l := len(v.DevList)
 		if l < less {
 			less = l
 			kk = k
 		}
 	}
 
-	if v, ok := r.MapData[kk]; ok {
-		if sh, ok := v["service_host"].(string); ok {
+	if v, ok := r.ClientsMap[kk]; ok {
+		if sh, ok := v.MapData["service_host"].(string); ok {
 			return sh
 		}
 	}
@@ -48,14 +74,20 @@ func (r *RpcxClis) ApplyServiceHost() string {
 	return ""
 }
 
-func (r *RpcxClis) GetClients() {
-	if r.Clients == nil {
-		r.Clients = newRpcxClients(r.PrefixName)
-		if r.Clients == nil {
-			r.Clients = make(map[string]*rpcx.Client, 0)
+func (r *RpcxClis) LoadClients() {
+	if r.ClientsMap == nil {
+		r.ClientsMap = make(map[string]*ServiceClisInfo, 0)
+
+		mc, md := newRpcxClients(r.PrefixName)
+		for k, v := range mc {
+			sci := &ServiceClisInfo{
+				Client:  v,
+				MapData: md[k],
+				DevList: make([]string, 0),
+			}
+			r.ClientsMap[k] = sci
 		}
-		r.MapData = make(map[string]map[string]interface{}, 0)
-		r.devList = make(map[string][]string, 0)
+
 		EtcdWatch(r.PrefixName, true, r.changeCalls)
 	}
 }
@@ -63,16 +95,18 @@ func (r *RpcxClis) GetClients() {
 func (r *RpcxClis) changeCalls(t int, k string, v map[string]interface{}) {
 	if t == 0 {
 		c := newRpcxClient(k, r.changeCalls)
-		r.Clients[k] = c
-		r.MapData[k] = v
-		r.devList[k] = []string{}
+		sci := &ServiceClisInfo{
+			Client:  c,
+			MapData: v,
+			DevList: []string{},
+		}
+		r.ClientsMap[k] = sci
+
 		log.Debug("new rpcx client,", k, v)
 	} else if t == 1 {
-		if vc, ok := r.Clients[k]; ok {
-			vc.Close()
-			delete(r.Clients, k)
-			delete(r.MapData, k)
-			delete(r.devList, k)
+		if vc, ok := r.ClientsMap[k]; ok {
+			vc.Client.Close()
+			delete(r.ClientsMap, k)
 			log.Warn("delete rpcx cient,", k, v)
 			return
 		}
@@ -96,7 +130,7 @@ func EtcdClient() *clientv3.Client {
 	return etcdClient
 }
 
-func GetEtcdServiceList(prefixKey string) map[string]interface{} {
+func GetEtcdServiceList(prefixKey string) map[string]map[string]interface{} {
 	etcdcli := EtcdClient()
 	if etcdcli == nil {
 		return nil
@@ -109,7 +143,7 @@ func GetEtcdServiceList(prefixKey string) map[string]interface{} {
 		return nil
 	}
 
-	result := make(map[string]interface{}, len(grep.Kvs))
+	result := make(map[string]map[string]interface{}, len(grep.Kvs))
 	for _, kv := range grep.Kvs {
 		ips := strings.Split(string(kv.Key), "/")
 		url := ips[len(ips)-1]
@@ -118,11 +152,7 @@ func GetEtcdServiceList(prefixKey string) map[string]interface{} {
 
 		var m map[string]interface{}
 		json.Unmarshal(kv.Value, &m)
-		if v, ok := m["service_host"].(string); ok {
-			result[url] = v
-		} else {
-			result[url] = ""
-		}
+		result[url] = m
 	}
 	return result
 }
@@ -150,7 +180,7 @@ func EtcdWatch(keyName string, isRoop bool, cb func(t int, k string, v map[strin
 	}()
 }
 
-func newRpcxClients(sname string) map[string]*rpcx.Client {
+func newRpcxClients(sname string) (map[string]*rpcx.Client, map[string]map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println(err)
@@ -159,11 +189,12 @@ func newRpcxClients(sname string) map[string]*rpcx.Client {
 
 	etcdConfs := GetEtcdServiceList(sname)
 	if etcdConfs == nil || len(etcdConfs) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	clis := make(map[string]*rpcx.Client, 0)
-	for url, _ := range etcdConfs {
+	md := make(map[string]map[string]interface{}, 0)
+	for url, m := range etcdConfs {
 		if len(url) <= 10 {
 			continue
 		}
@@ -173,11 +204,14 @@ func newRpcxClients(sname string) map[string]*rpcx.Client {
 			DialTimeout: 20 * time.Second,
 		})
 		if client != nil {
-			clis[path.Join(sname, url)] = client
+			k := path.Join(sname, url)
+			clis[k] = client
+			md[k] = m
+			log.Debug("new client:", k)
 		}
 	}
 
-	return clis
+	return clis, md
 }
 
 func newRpcxClient(sname string, cb func(t int, k string, v map[string]interface{})) *rpcx.Client {

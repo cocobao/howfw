@@ -16,21 +16,24 @@ type RpcxMultiCli struct {
 	SyLock      sync.Mutex
 }
 
-func (r *RpcxMultiCli) GetMultiClient() {
+func (r *RpcxMultiCli) GetMultiClient() *rpcx.Client {
 	r.SyLock.Lock()
 	defer r.SyLock.Unlock()
 
 	if r.Client == nil {
-		r.Client = newMultiRpcxClient(r.ServiceName, func(t int, k string, v map[string]interface{}) {
+		r.Client = newMultiRpcxClient(r.ServiceName)
+		EtcdWatch(r.ServiceName, false, func(t int, k string, v map[string]interface{}) {
 			r.SyLock.Lock()
 			defer r.SyLock.Unlock()
+			log.Warn("client release,", k, v)
 			r.Client = nil
 		})
 	}
+	return r.Client
 }
 
 //new一个rpcx客户端
-func newMultiRpcxClient(sname string, cb func(t int, k string, v map[string]interface{})) *rpcx.Client {
+func newMultiRpcxClient(sname string) *rpcx.Client {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println(err)
@@ -62,6 +65,5 @@ func newMultiRpcxClient(sname string, cb func(t int, k string, v map[string]inte
 	}
 	log.Debug("new rpcx ok:", etcdConfs)
 	client.FailMode = rpcx.Failover
-	EtcdWatch(sname, false, cb)
 	return client
 }

@@ -31,7 +31,7 @@ func main() {
 		fmt.Println("~stop~~", timeutil.TimeToZoneStr(time.Now().Unix()))
 		rpcser.StopRpcServer()
 	})
-	// rpcservice.RunRpc()
+	rpcservice.RunRpc()
 
 	ser := netconn.NewServer(
 		netconn.OnConnectOption(climgr.OnConnect),
