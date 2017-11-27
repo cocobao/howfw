@@ -12,7 +12,7 @@ import (
 	"github.com/cocobao/howfw/netconn"
 	"github.com/cocobao/howfw/rpcser"
 	"github.com/cocobao/howfw/signal"
-	"spm.pub/cloud/deev/utils/timeutil"
+	"github.com/cocobao/howfw/util/timeutil"
 )
 
 func main() {

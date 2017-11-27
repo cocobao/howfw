@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	v                   = flag.Bool("v", false, "-- the version")
+	ver                 = flag.Bool("ver", false, "-- the version")
 	SetConfPath *string = flag.String("conf", "conf/settings.yml", "-- config file")
 	GCfg        *Config
 )
@@ -36,7 +36,7 @@ type Config struct {
 
 func NewConfig() (*Config, error) {
 	flag.Parse()
-	if *v {
+	if *ver {
 		fmt.Println(VERSION)
 		os.Exit(0)
 	}

@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 
+	"github.com/cocobao/howfw/howservice/conf"
 	"github.com/cocobao/howfw/mode"
 	"github.com/cocobao/log"
 )
@@ -25,18 +26,26 @@ func (t *Trans) TransIn(req *mode.TransData, reply *mode.TransResp) (err error) 
 		cmd = v
 	}
 
-	var host string
-	if v, ok := req.Headers["host"]; ok {
-		host = v
-	}
-
 	switch cmd {
-	case "dev_online":
-		devOnline(host, val)
-	case "dev_offline":
-		devOffline(host, val)
 	case "trans_data":
-		devTransData(host, val)
+		devTransData(val)
+	}
+	return
+}
+
+func (t *Trans) SynDevlist(req *mode.TransData, reply *mode.TransResp) (err error) {
+	defer func() {
+		reply.Code = 200
+		reply.Err = ""
+	}()
+	devList := callClimgr.GetCliList()
+
+	data, _ := json.Marshal(map[string]interface{}{
+		"devlist": devList,
+	})
+	reply.RespData.Body = data
+	reply.RespData.Headers = map[string]string{
+		"host": conf.GCfg.LocalHost,
 	}
 	return
 }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/cocobao/howfw/util/timer"
 
-	"github.com/cocobao/howfw/howliao/handle"
+	"github.com/cocobao/howfw/howchat/handle"
 	"github.com/cocobao/log"
 )
 

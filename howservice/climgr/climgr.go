@@ -10,12 +10,28 @@ import (
 )
 
 var (
-	cliMap  map[int64]*mode.Clipoint
+	cliMap  map[string]*mode.Clipoint
 	cliSync sync.Mutex
 )
 
 func init() {
-	cliMap = make(map[int64]*mode.Clipoint, 0)
+	cliMap = make(map[string]*mode.Clipoint, 0)
+}
+
+type InnnerCall struct {
+	mode.CallClimgr
+}
+
+func (c *InnnerCall) GetCliList() []string {
+	ret := []string{}
+	for k, _ := range cliMap {
+		ret = append(ret, k)
+	}
+	return ret
+}
+
+func (c *InnnerCall) SendDataToDev(devId string, data interface{}) {
+
 }
 
 func OnConnect(conn netconn.WriteCloser) bool {
@@ -29,8 +45,12 @@ func OnClose(conn netconn.WriteCloser) {
 
 	cliSync.Lock()
 	defer cliSync.Unlock()
-	if _, ok := cliMap[nid]; ok {
-		delete(cliMap, nid)
+	for k, cli := range cliMap {
+		if cli.Nid == nid {
+			delete(cliMap, k)
+			SyncOfflineToManager(cli.Name)
+			log.Debugf("logout client:%s", cli.Name)
+		}
 	}
 }
 
@@ -53,9 +73,7 @@ func OnMessage(data []byte, conn netconn.WriteCloser) {
 	switch cmd {
 	case "login":
 		login(mapData, conn)
-	case "list":
-		list(mapData, conn)
-	case "msg":
-		msg(mapData, conn)
+	case "trans_data":
+		transmsg(mapData, conn)
 	}
 }

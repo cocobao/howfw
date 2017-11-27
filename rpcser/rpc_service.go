@@ -25,14 +25,32 @@ type ServiceClisInfo struct {
 }
 
 type RpcxClis struct {
-	PrefixName string
-	ClientsMap map[string]*ServiceClisInfo
+	PrefixName    string
+	ClientsMap    map[string]*ServiceClisInfo
+	OnConnectCall func(cliKey string)
 }
 
 func (r *RpcxClis) AddDev(host string, did string) {
 	k := path.Join(r.PrefixName, host)
 	if v, ok := r.ClientsMap[k]; ok {
+		for _, v := range v.DevList {
+			if v == did {
+				return
+			}
+		}
 		log.Debugf("add dev, service:%s, did:%s", host, did)
+		v.DevList = append(v.DevList, did)
+	}
+}
+
+func (r *RpcxClis) AddDevWithKey(key string, did string) {
+	if v, ok := r.ClientsMap[key]; ok {
+		for _, v := range v.DevList {
+			if v == did {
+				return
+			}
+		}
+		log.Debugf("add dev, service:%s, did:%s", key, did)
 		v.DevList = append(v.DevList, did)
 	}
 }
@@ -47,6 +65,27 @@ func (r *RpcxClis) DecDev(host string, did string) {
 				return
 			}
 		}
+	}
+}
+
+func (r *RpcxClis) DevBelongTo(did string) string {
+	for k, v := range r.ClientsMap {
+		for _, dev := range v.DevList {
+			if dev == did {
+				hs := strings.Split(k, "/")
+				return hs[len(hs)-1]
+			}
+		}
+	}
+	return ""
+}
+
+func (r *RpcxClis) SendDataToClient(host string, method string, args interface{}, reply interface{}) {
+	k := path.Join(r.PrefixName, host)
+	if v, ok := r.ClientsMap[k]; ok {
+		ctx, cancel := context.WithTimeout(etcdctx, etcdTimeout*time.Second)
+		v.Client.Call(ctx, method, args, reply)
+		cancel()
 	}
 }
 
@@ -86,9 +125,21 @@ func (r *RpcxClis) LoadClients() {
 				DevList: make([]string, 0),
 			}
 			r.ClientsMap[k] = sci
+
+			if r.OnConnectCall != nil {
+				r.OnConnectCall(k)
+			}
 		}
 
 		EtcdWatch(r.PrefixName, true, r.changeCalls)
+	}
+}
+
+func (r *RpcxClis) CallClient(key string, method string, args interface{}, reply interface{}) {
+	if cli, ok := r.ClientsMap[key]; ok {
+		ctx, cancel := context.WithTimeout(etcdctx, etcdTimeout*time.Second)
+		defer cancel()
+		cli.Client.Call(ctx, method, args, reply)
 	}
 }
 
@@ -101,7 +152,9 @@ func (r *RpcxClis) changeCalls(t int, k string, v map[string]interface{}) {
 			DevList: []string{},
 		}
 		r.ClientsMap[k] = sci
-
+		if r.OnConnectCall != nil {
+			r.OnConnectCall(k)
+		}
 		log.Debug("new rpcx client,", k, v)
 	} else if t == 1 {
 		if vc, ok := r.ClientsMap[k]; ok {

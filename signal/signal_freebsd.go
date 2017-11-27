@@ -4,7 +4,7 @@ import "fmt"
 import "os"
 import "os/signal"
 import "syscall"
-import "git.spotmau.cn/cloud/deev/modules/middleware/log"
+import "github.com/cocobao/log"
 
 type signalHandler func(s os.Signal, arg interface{})
 

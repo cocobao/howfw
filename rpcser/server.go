@@ -31,7 +31,7 @@ var (
 	etcdctx      context.Context
 )
 
-func SetupEtcdConfig(host, usname, pwd string, sn string,
+func SetupEtcdConfig(host, usname, pwd, sn string,
 	endPoints []string,
 	dialTimeout time.Duration) {
 

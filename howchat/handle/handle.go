@@ -3,17 +3,17 @@ package handle
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/cocobao/howfw/howliao/conf"
+	"github.com/cocobao/howfw/howchat/conf"
 	"github.com/cocobao/howfw/netconn"
 	"github.com/cocobao/log"
 )
 
 var (
 	gconn *netconn.ClientConn
+	devId string
 )
 
 func SetCon(c *netconn.ClientConn) {
@@ -29,17 +29,10 @@ func CommandHandle(command []string) {
 		}
 		login(command[1:])
 		return
-	case "list":
-		list()
-		return
 	}
 
 	if strings.HasPrefix(cmd, "@") && len(cmd) > 1 {
 		if len(command) <= 1 {
-			return
-		}
-		act, err := strconv.Atoi(cmd[1:])
-		if err != nil {
 			return
 		}
 
@@ -48,7 +41,7 @@ func CommandHandle(command []string) {
 			msg += v
 			msg += " "
 		}
-		actmsg(act, msg)
+		actmsg(cmd[1:], msg)
 	}
 }
 
@@ -65,11 +58,13 @@ func Send(md map[string]interface{}) {
 	gconn.Write(data)
 }
 
-func actmsg(act int, s string) {
+func actmsg(toid string, s string) {
+	log.Debugf("act msg:%s to:%s", s, toid)
 	Send(map[string]interface{}{
-		"cmd": "msg",
-		"id":  act,
-		"msg": s,
+		"cmd":     "trans_data",
+		"from_id": devId,
+		"to_id":   toid,
+		"data":    s,
 	})
 }
 
@@ -77,17 +72,12 @@ func login(s []string) {
 	serviceAddr := ApplyService(conf.GCfg.ManagerHost)
 	if len(serviceAddr) > 0 {
 		connectService(serviceAddr)
+		devId = s[0]
 		Send(map[string]interface{}{
 			"cmd":      "login",
-			"username": s[0],
+			"username": devId,
 		})
 	}
-}
-
-func list() {
-	Send(map[string]interface{}{
-		"cmd": "list",
-	})
 }
 
 func OnMessage(msg []byte, c netconn.WriteCloser) {
@@ -122,13 +112,6 @@ func OnMessage(msg []byte, c netconn.WriteCloser) {
 	switch cmd {
 	case "login":
 		fmt.Println("login ok")
-	case "list":
-		if result, ok := mapData["result"].(map[string]interface{}); ok {
-			for k, v := range result {
-				fmt.Printf("\n%s: %v", k, v)
-			}
-			fmt.Print("\n")
-		}
 	case "msg":
 		if result, ok := mapData["result"].(map[string]interface{}); ok {
 			fmt.Print("\n")

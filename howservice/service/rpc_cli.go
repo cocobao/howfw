@@ -1,4 +1,4 @@
-package rpcservice
+package service
 
 import (
 	"context"
@@ -8,20 +8,25 @@ import (
 	"github.com/cocobao/howfw/mode"
 	"github.com/cocobao/howfw/rpcser"
 	"github.com/cocobao/log"
-	"spm.pub/cloud/deev/modules/model"
 )
 
 var (
-	rpcCli *rpcser.RpcxMultiCli
+	rpcCli     *rpcser.RpcxMultiCli
+	callClimgr mode.CallClimgr
 )
 
-func RunRpc() {
+func RunRpc(c mode.CallClimgr) {
 	rpcCli = &rpcser.RpcxMultiCli{
 		ServiceName: "/howmanager",
 	}
+	callClimgr = c
 }
 
-func CallManager(md map[string]interface{}) {
+type InnerCall struct {
+	mode.CallService
+}
+
+func (c *InnerCall) CallManager(md map[string]interface{}) {
 	tmpData, err := json.Marshal(md)
 	if err != nil {
 		log.Warn("marsha data fail", err)
@@ -38,7 +43,7 @@ func CallManager(md map[string]interface{}) {
 		log.Warn("no manager cli found")
 		return
 	}
-	if err := cli.Call(context.Background(), "howmanager.TransIn", data, &model.TossResp{}); err != nil {
+	if err := cli.Call(context.Background(), "howmanager.TransIn", data, &mode.TransResp{}); err != nil {
 		log.Warn("call transin fail", err)
 		return
 	}
