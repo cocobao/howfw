@@ -23,7 +23,6 @@ func RunRpc(c mode.CallClimgr) {
 }
 
 type InnerCall struct {
-	mode.CallService
 }
 
 func (c *InnerCall) CallManager(md map[string]interface{}) {

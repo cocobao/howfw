@@ -1,7 +1,7 @@
 package mode
 
 type CallClimgr interface {
-	SendDataToDev(devId string, data interface{})
+	SendDataToDev(devId string, data map[string]interface{})
 	GetCliList() []string
 }
 

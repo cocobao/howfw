@@ -53,7 +53,7 @@ func devTransData(host string, md map[string]interface{}) {
 		return
 	}
 
-	log.Debugf("from:%s, to:%s, msg:%v", from_id, to_id, data)
+	log.Debugf("from:%s, to:%s, msg:%v, service:%s", from_id, to_id, data, serviceHost)
 
 	callService(serviceHost, map[string]interface{}{
 		"cmd":     "trans_data",

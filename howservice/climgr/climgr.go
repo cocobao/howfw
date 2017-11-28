@@ -19,7 +19,6 @@ func init() {
 }
 
 type InnnerCall struct {
-	mode.CallClimgr
 }
 
 func (c *InnnerCall) GetCliList() []string {
@@ -30,8 +29,12 @@ func (c *InnnerCall) GetCliList() []string {
 	return ret
 }
 
-func (c *InnnerCall) SendDataToDev(devId string, data interface{}) {
-
+func (c *InnnerCall) SendDataToDev(devId string, data map[string]interface{}) {
+	if v, ok := cliMap[devId]; ok {
+		Send(data, v.Conn)
+	} else {
+		log.Warnf("no service for devid:%s found")
+	}
 }
 
 func OnConnect(conn netconn.WriteCloser) bool {

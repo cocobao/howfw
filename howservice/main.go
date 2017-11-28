@@ -31,6 +31,7 @@ func main() {
 		fmt.Println("~stop~~", timeutil.TimeToZoneStr(time.Now().Unix()))
 		rpcser.StopRpcServer()
 	})
+
 	service.RunRpc(new(climgr.InnnerCall))
 	climgr.SetCallService(new(service.InnerCall))
 

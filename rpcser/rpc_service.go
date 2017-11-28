@@ -86,6 +86,8 @@ func (r *RpcxClis) SendDataToClient(host string, method string, args interface{}
 		ctx, cancel := context.WithTimeout(etcdctx, etcdTimeout*time.Second)
 		v.Client.Call(ctx, method, args, reply)
 		cancel()
+	} else {
+		log.Warnf("not found:%s", k)
 	}
 }
 

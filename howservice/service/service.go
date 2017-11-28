@@ -8,17 +8,19 @@ func devTransData(md map[string]interface{}) {
 		to_id = v
 	}
 	if len(to_id) == 0 {
+		log.Warn("no to id found")
 		return
 	}
 
-	var data string
-	if v, ok := md["data"].(string); ok {
+	var data map[string]interface{}
+	if v, ok := md["data"].(map[string]interface{}); ok {
 		data = v
 	} else {
+		log.Warn("no data found")
 		return
 	}
 
-	log.Debug("to_id:%s, data:%v", to_id, data)
+	log.Debugf("to_id:%s, data:%v", to_id, data)
 
-	// mid.SendDataToDev(to_id, data)
+	callClimgr.SendDataToDev(to_id, data)
 }
