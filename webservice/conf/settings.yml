@@ -1,0 +1,3 @@
+---
+local_port: ":16894"
+static_path: "./static"
