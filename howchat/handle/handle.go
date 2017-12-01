@@ -62,27 +62,27 @@ func Send(md map[string]interface{}) {
 }
 
 func actmsg(toid string, s string) {
-	var lt int64
-	var sp int64
-	var cn int64
-	log.Debugf("act msg:%s to:%s", s, toid)
-	for index := 0; index < 1000000; index++ {
-		t := time.Now().Unix()
-		if t > lt {
-			lt = t
-			sp = cn
-			cn = 0
-			fmt.Printf("speed:%d/s\n", sp)
-		}
-		cn++
-		Send(map[string]interface{}{
-			"cmd":     "trans_data",
-			"from_id": devId,
-			"to_id":   toid,
-			"data":    s,
-		})
-		time.Sleep(100 * time.Microsecond)
-	}
+	// var lt int64
+	// var sp int64
+	// var cn int64
+	// log.Debugf("act msg:%s to:%s", s, toid)
+	// for index := 0; index < 1000000; index++ {
+	// 	t := time.Now().Unix()
+	// 	if t > lt {
+	// 		lt = t
+	// 		sp = cn
+	// 		cn = 0
+	// 		fmt.Printf("speed:%d/s\n", sp)
+	// 	}
+	// 	cn++
+	Send(map[string]interface{}{
+		"cmd":     "trans_data",
+		"from_id": devId,
+		"to_id":   toid,
+		"data":    s,
+	})
+	// 	time.Sleep(100 * time.Microsecond)
+	// }
 }
 
 func login(s []string) {
@@ -139,7 +139,7 @@ func OnMessage(msg []byte, c netconn.WriteCloser) {
 				count = 0
 				fmt.Print("\n")
 				if from, ok := result["from_id"].(string); ok {
-					fmt.Printf("%v %d/s %v: ", t, speed, from)
+					fmt.Printf("%v  %v: ", t, from)
 				}
 				if msg, ok := result["data"].(string); ok {
 					fmt.Printf("%s\n", msg)

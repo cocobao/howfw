@@ -1,7 +1,6 @@
 package climgr
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/cocobao/howfw/mode"
@@ -58,25 +57,8 @@ func OnClose(conn netconn.WriteCloser) {
 }
 
 func OnMessage(data []byte, conn netconn.WriteCloser) {
-	c := conn.(*netconn.ServerConn)
-	nid := c.NetID()
-	var mapData map[string]interface{}
-	if err := json.Unmarshal(data, &mapData); err != nil {
-		log.Error("unmarshal fail,", err)
-		return
-	}
-
-	log.Debugf("nid:%d on msg:%v", nid, mapData)
-
-	var cmd string
-	if v, ok := mapData["cmd"].(string); ok {
-		cmd = v
-	}
-
-	switch cmd {
-	case "login":
-		login(mapData, conn)
-	case "trans_data":
-		transmsg(mapData, conn)
+	handleChan <- &handleData{
+		data: data,
+		conn: conn,
 	}
 }

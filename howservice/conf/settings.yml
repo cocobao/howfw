@@ -2,6 +2,7 @@
 
 local_host: "192.168.1.102:20090"
 service_host: "192.168.1.102:20091"
+mongo_host: ""
 
 etcd_server: #etcd服务配置
  endpoints:
