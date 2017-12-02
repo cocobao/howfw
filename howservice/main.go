@@ -9,6 +9,7 @@ import (
 	"github.com/cocobao/howfw/howservice/climgr"
 	"github.com/cocobao/howfw/howservice/conf"
 	"github.com/cocobao/howfw/howservice/service"
+	"github.com/cocobao/howfw/howservice/storage"
 	"github.com/cocobao/howfw/netconn"
 	"github.com/cocobao/howfw/rpcser"
 	"github.com/cocobao/howfw/signal"
@@ -17,6 +18,8 @@ import (
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	storage.SetupMongoDB(conf.GCfg.MongoHost)
 
 	rpcser.SetupEtcdConfig(
 		conf.GCfg.LocalHost,

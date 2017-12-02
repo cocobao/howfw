@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/cocobao/howfw/webservice/conf"
-	"github.com/cocobao/howfw/webservice/router"
+	"github.com/cocobao/howfw/howeb/conf"
+	"github.com/cocobao/howfw/howeb/router"
 	"github.com/facebookgo/grace/gracehttp"
 )
 

@@ -142,11 +142,22 @@ func transmsg(mapData map[string]interface{}, conn netconn.WriteCloser) {
 }
 
 func report_event(mapData map[string]interface{}, conn netconn.WriteCloser) {
-	if v, ok := mapData["dev_id"].(string); ok {
-		storage.InsertEventData(map[string]interface{}{
-			"device_id":   v,
-			"insert_time": time.Now().Format("2006-01-02T15:04:05-07:00"),
-			"event":       mapData,
-		})
+	var devType string
+	if v, ok := mapData["dev_type"].(string); ok {
+		devType = v
 	}
+
+	var devId string
+	if v, ok := mapData["dev_id"].(string); ok {
+		devId = v
+	} else {
+		return
+	}
+
+	storage.InsertEventData(map[string]interface{}{
+		"device_id":   devId,
+		"device_type": devType,
+		"insert_time": time.Now().Format("2006-01-02T15:04:05-07:00"),
+		"event":       mapData,
+	})
 }

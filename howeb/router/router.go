@@ -3,7 +3,7 @@ package router
 import (
 	"net/http"
 
-	"github.com/cocobao/howfw/webservice/controller"
+	"github.com/cocobao/howfw/howeb/controller"
 	"github.com/gin-gonic/gin"
 )
 

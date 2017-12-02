@@ -51,3 +51,11 @@ func (t *Trans) SynDevlist(req *mode.TransData, reply *mode.TransResp) (err erro
 	}
 	return
 }
+
+func (t *Trans) ReqFromWebservice(req *mode.TransData, reply *mode.TransResp) (err error) {
+	defer func() {
+		reply.Code = 200
+		reply.Err = ""
+	}()
+
+}

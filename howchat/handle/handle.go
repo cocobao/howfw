@@ -3,6 +3,7 @@ package handle
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -17,6 +18,7 @@ var (
 	count int64
 	lastT int64
 	speed int64
+	stop  bool
 )
 
 func SetCon(c *netconn.ClientConn) {
@@ -31,6 +33,12 @@ func CommandHandle(command []string) {
 			return
 		}
 		login(command[1:])
+		return
+	case "report_event":
+		reportEvent()
+		return
+	case "stop":
+		stopthis()
 		return
 	}
 
@@ -95,6 +103,32 @@ func login(s []string) {
 			"username": devId,
 		})
 	}
+}
+
+func reportEvent() {
+	go func() {
+		stop = false
+		for {
+			rand.Seed(time.Now().Unix())
+			rnd := rand.Intn(100)
+			Send(map[string]interface{}{
+				"cmd":      "report_event",
+				"dev_type": "温度传感器",
+				"dev_id":   devId,
+				"value":    rnd,
+			})
+
+			if stop {
+				return
+			}
+
+			time.Sleep(3 * time.Second)
+		}
+	}()
+}
+
+func stopthis() {
+	stop = true
 }
 
 func OnMessage(msg []byte, c netconn.WriteCloser) {
