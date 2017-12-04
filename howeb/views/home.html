@@ -4,53 +4,76 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
+
     <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css">
     <title>Home</title>
 </head>
 
 <body>
-  <nav class="navbar navbar-inverse">
-    <div class="container-fluid">
-      <div class="navbar-header">
-        <a class="navbar-brand" href="/">Howeb</a>
-      </div>
-      <form class="navbar-form navbar-left" role="search">
-        <div class="form-group">
-          <input type="text" class="form-control" placeholder="Search">
-        </div>
-        <button type="submit" class="btn btn-default">搜索</button>
-      </form>
-  </nav>
+    <nav class="navbar navbar-inverse">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="/">Howeb</a>
+            </div>
+            <form class="navbar-form navbar-left" role="search">
+                <div class="form-group">
+                    <input type="text" class="form-control" placeholder="Search">
+                </div>
+                <button type="submit" class="btn btn-default">搜索</button>
+            </form>
+    </nav>
 
     <div class="thispanding">
-      <div class="panel panel-default" style="margin:auto 100px; margin-top:50px">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>设备Id</th>
-              <th>设备类型</th>
-              <th>设备状态</th>
-              <th>设备日志</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="row">1</th>
-              <td>Mark</td>
-              <td>Otto</td>
-              <td>@mdo</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <div class="panel panel-default" style="margin:auto 100px; margin-top:50px">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>设备Id</th>
+                        <th>设备类型</th>
+                        <th>所属服务器</th>
+                        <th>设备状态</th>
+                        <th>设备日志</th>
+                        <th>更新时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        {{range .devlogs}}
+                        <th scope="row">{{.index}}</th>
+                        <td>{{.device_id}}</td>
+                        <td>{{.device_type}}</td>
+                        <td>{{.service}}</td>
+                        <td>在线</td>
+                        <td>value={{.event.value}}</td>
+                        <td>{{.insert_time}}</td>
+                        {{end}}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
+
+
+    <!-- <script type="text/javascript">
+        var getting = {
+            url: 'server.php',
+            dataType: 'json',
+            success: function(res) {
+                console.log(res);
+            }
+        };
+
+        window.setInterval(function() {
+            $.ajax(getting)
+        }, 1000);
+    </script> -->
+
 
     <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-    <script src="/static/js/bootstrap.min.js"></script>    
+    <script src="/static/js/bootstrap.min.js"></script>
 </body>
 
 </html>

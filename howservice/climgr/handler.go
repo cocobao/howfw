@@ -151,6 +151,7 @@ func report_event(mapData map[string]interface{}, conn netconn.WriteCloser) {
 	if v, ok := mapData["dev_id"].(string); ok {
 		devId = v
 	} else {
+		log.Warn("no dev_id found")
 		return
 	}
 

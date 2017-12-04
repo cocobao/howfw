@@ -24,6 +24,7 @@ func (t *Trans) TransIn(req *mode.TransData, reply *mode.TransResp) (err error) 
 	if v, ok := val["cmd"].(string); ok {
 		cmd = v
 	}
+	log.Debugf("body:%+v", val)
 
 	var host string
 	if v, ok := req.Headers["host"]; ok {
@@ -37,6 +38,13 @@ func (t *Trans) TransIn(req *mode.TransData, reply *mode.TransResp) (err error) 
 		devOffline(host, val)
 	case "trans_data":
 		devTransData(host, val)
+	case "dev_list":
+		l := devList()
+		log.Debug("dev list:", l)
+		data, _ := json.Marshal(l)
+		reply.RespData = mode.TransData{
+			Body: data,
+		}
 	}
 	return
 }

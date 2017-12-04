@@ -57,5 +57,5 @@ func (t *Trans) ReqFromWebservice(req *mode.TransData, reply *mode.TransResp) (e
 		reply.Code = 200
 		reply.Err = ""
 	}()
-
+	return
 }

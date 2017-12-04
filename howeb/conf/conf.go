@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/cocobao/log"
 	yaml "gopkg.in/yaml.v2"
@@ -20,9 +21,18 @@ var (
 	GCfg        *Config
 )
 
+type EtcdCfg struct {
+	Endpoints   []string      `yaml:"endpoints"`
+	DialTimeout time.Duration `yaml:"dial_timeout"`
+	Username    string        `yaml:"user_name"`
+	Password    string        `yaml:"password"`
+}
+
 type Config struct {
-	LocalPort  string `yaml:"local_port"`
-	StaticPath string `yaml:"static_path"`
+	LocalPort  string  `yaml:"local_port"`
+	StaticPath string  `yaml:"static_path"`
+	MongoHost  string  `yaml:"mongo_host"`
+	EtcdServer EtcdCfg `yaml:"etcd_server"`
 }
 
 func NewConfig() (*Config, error) {

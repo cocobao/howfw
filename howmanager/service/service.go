@@ -19,6 +19,14 @@ func devOffline(host string, md map[string]interface{}) {
 	}
 }
 
+func devList() map[string]interface{} {
+	result := make(map[string]interface{}, len(rpcCli.ClientsMap))
+	for k, cli := range rpcCli.ClientsMap {
+		result[k] = cli.DevList
+	}
+	return result
+}
+
 func devTransData(host string, md map[string]interface{}) {
 	var to_id string
 	if v, ok := md["to_id"].(string); ok {
