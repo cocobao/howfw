@@ -6,5 +6,5 @@ type CallClimgr interface {
 }
 
 type CallService interface {
-	CallManager(md map[string]interface{})
+	CallManager(isBroadcast bool, md map[string]interface{})
 }

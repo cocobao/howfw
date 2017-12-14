@@ -21,7 +21,7 @@ func (t *Trans) TransIn(req *mode.TransData, reply *mode.TransResp) (err error) 
 		return
 	}
 
-	log.Debugf("call trans in:%v", val)
+	// log.Debugf("call trans in:%v", val)
 
 	var cmd string
 	if v, ok := val["cmd"].(string); ok {

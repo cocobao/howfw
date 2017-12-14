@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"sync"
+
 	"github.com/cocobao/log"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/smallnest/rpcx"
@@ -28,9 +30,12 @@ type RpcxClis struct {
 	PrefixName    string
 	ClientsMap    map[string]*ServiceClisInfo
 	OnConnectCall func(cliKey string)
+	Lock          sync.Mutex
 }
 
 func (r *RpcxClis) AddDev(host string, did string) {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
 	k := path.Join(r.PrefixName, host)
 	if v, ok := r.ClientsMap[k]; ok {
 		for _, v := range v.DevList {
@@ -44,6 +49,8 @@ func (r *RpcxClis) AddDev(host string, did string) {
 }
 
 func (r *RpcxClis) AddDevWithKey(key string, did string) {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
 	if v, ok := r.ClientsMap[key]; ok {
 		for _, v := range v.DevList {
 			if v == did {
@@ -56,6 +63,8 @@ func (r *RpcxClis) AddDevWithKey(key string, did string) {
 }
 
 func (r *RpcxClis) DecDev(host string, did string) {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
 	k := path.Join(r.PrefixName, host)
 	if v, ok := r.ClientsMap[k]; ok {
 		log.Debugf("dec dev, service:%s, did:%s", host, did)
@@ -69,6 +78,8 @@ func (r *RpcxClis) DecDev(host string, did string) {
 }
 
 func (r *RpcxClis) DevBelongTo(did string) string {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
 	for k, v := range r.ClientsMap {
 		for _, dev := range v.DevList {
 			if dev == did {
@@ -81,8 +92,10 @@ func (r *RpcxClis) DevBelongTo(did string) string {
 }
 
 func (r *RpcxClis) SendDataToClient(host string, method string, args interface{}, reply interface{}) {
+	r.Lock.Lock()
 	k := path.Join(r.PrefixName, host)
 	if v, ok := r.ClientsMap[k]; ok {
+		r.Lock.Unlock()
 		ctx, cancel := context.WithTimeout(etcdctx, etcdTimeout*time.Second)
 		v.Client.Call(ctx, method, args, reply)
 		cancel()
@@ -92,6 +105,8 @@ func (r *RpcxClis) SendDataToClient(host string, method string, args interface{}
 }
 
 func (r *RpcxClis) ApplyServiceHost() string {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
 	if r.ClientsMap == nil || len(r.ClientsMap) == 0 {
 		return ""
 	}
@@ -138,7 +153,9 @@ func (r *RpcxClis) LoadClients() {
 }
 
 func (r *RpcxClis) CallClient(key string, method string, args interface{}, reply interface{}) {
+	r.Lock.Lock()
 	if cli, ok := r.ClientsMap[key]; ok {
+		r.Lock.Unlock()
 		ctx, cancel := context.WithTimeout(etcdctx, etcdTimeout*time.Second)
 		defer cancel()
 		cli.Client.Call(ctx, method, args, reply)
@@ -153,12 +170,17 @@ func (r *RpcxClis) changeCalls(t int, k string, v map[string]interface{}) {
 			MapData: v,
 			DevList: []string{},
 		}
+		r.Lock.Lock()
 		r.ClientsMap[k] = sci
+		r.Lock.Unlock()
+
 		if r.OnConnectCall != nil {
 			r.OnConnectCall(k)
 		}
 		log.Debug("new rpcx client,", k, v)
 	} else if t == 1 {
+		r.Lock.Lock()
+		defer r.Lock.Unlock()
 		if vc, ok := r.ClientsMap[k]; ok {
 			vc.Client.Close()
 			delete(r.ClientsMap, k)

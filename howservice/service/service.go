@@ -20,7 +20,7 @@ func devTransData(md map[string]interface{}) {
 		return
 	}
 
-	log.Debugf("to_id:%s, data:%v", to_id, data)
+	// log.Debugf("to_id:%s, data:%v", to_id, data)
 
 	callClimgr.SendDataToDev(to_id, data)
 }

@@ -24,7 +24,7 @@ func (t *Trans) TransIn(req *mode.TransData, reply *mode.TransResp) (err error) 
 	if v, ok := val["cmd"].(string); ok {
 		cmd = v
 	}
-	log.Debugf("body:%+v", val)
+	// log.Debugf("body:%+v", val)
 
 	var host string
 	if v, ok := req.Headers["host"]; ok {
