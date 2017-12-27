@@ -10,6 +10,7 @@ import (
 
 	"github.com/cocobao/howfw/util/timeutil"
 	"github.com/cocobao/log"
+	"github.com/coreos/etcd/clientv3"
 	"github.com/smallnest/rpcx"
 	rpcxlog "github.com/smallnest/rpcx/log"
 	emptylog "github.com/ti/goutil/log"
@@ -50,20 +51,34 @@ func SetupRpcx(service interface{}, serviceHost string) error {
 	if etcdCli == nil {
 		return fmt.Errorf("connect etcd server failed!")
 	} else {
-
-		jm, _ := json.Marshal(map[string]string{
+		jm, err := json.Marshal(map[string]string{
 			"create_at":    timeutil.TimeToZoneStr(time.Now().Unix()),
 			"service_host": serviceHost,
 		})
+		if err != nil {
+			log.Warn("marshal fail", err)
+			return err
+		}
+
+		ctx, cancel := context.WithTimeout(etcdctx, 10*time.Second)
+		rgp, err := etcdCli.Grant(ctx, 10)
+		cancel()
+		if err != nil {
+			log.Warn("grant fail", err)
+			return err
+		}
 
 		key := "/" + serviceName + "/" + localHost
-		ctx, cancel := context.WithTimeout(etcdctx, etcdTimeout*time.Second)
-		_, err := etcdCli.Put(ctx, key, string(jm))
+		ctx, cancel = context.WithTimeout(etcdctx, 10*time.Second)
+		_, err = etcdCli.Put(ctx, key, string(jm), clientv3.WithLease(rgp.ID))
+		cancel()
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(0)
+			return err
 		}
-		cancel()
+
+		ctx, cancel = context.WithTimeout(etcdctx, 10*time.Second)
+		etcdCli.KeepAlive(ctx, rgp.ID)
 	}
 
 	etcdURLs := "etcd://" + etcdUserName + ":" + etcdPasswd + "@"

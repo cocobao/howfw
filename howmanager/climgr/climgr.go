@@ -19,6 +19,7 @@ func init() {
 	one = &sync.Once{}
 }
 
+//获取客户端管理器单例
 func GetClientMgr() *ClientMgr {
 	one.Do(func() {
 		cmg = &ClientMgr{
@@ -30,9 +31,12 @@ func GetClientMgr() *ClientMgr {
 }
 
 type ClientMgr struct {
+	//客户端节点列表
 	clis    []*mode.Clipoint
 	cliSync sync.Mutex
-	freCtl  map[string]int
+
+	//频率控制
+	freCtl map[string]int
 }
 
 func (c *ClientMgr) Send(md map[string]interface{}, conn netconn.WriteCloser) {
@@ -51,6 +55,15 @@ func (c *ClientMgr) OnConnect(conn netconn.WriteCloser) bool {
 
 	c.cliSync.Lock()
 	defer c.cliSync.Unlock()
+
+	if v, ok := c.freCtl[addr]; ok {
+		v++
+		c.freCtl[addr] = v
+
+		if v > 100 {
+			return false
+		}
+	}
 
 	//是否已经存在，如果有，先删除
 	index := -1
