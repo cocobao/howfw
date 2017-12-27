@@ -33,10 +33,11 @@ func main() {
 	})
 	service.RunRpc()
 
+	cmg := climgr.GetClientMgr()
 	cliser := netconn.NewServer(
-		netconn.OnConnectOption(climgr.OnConnect),
-		netconn.OnCloseOption(climgr.OnClose),
-		netconn.OnMessageOption(climgr.OnMessage))
+		netconn.OnConnectOption(cmg.OnConnect),
+		netconn.OnCloseOption(cmg.OnClose),
+		netconn.OnMessageOption(cmg.OnMessage))
 	s := strings.Split(conf.GCfg.ServiceHost, ":")
 	cliser.Start(s[1])
 }
