@@ -11,22 +11,31 @@ import (
 )
 
 var (
-	clis    []*mode.Clipoint
-	cliSync sync.Mutex
-	roopID  int
+	cmg *ClientMgr
+	one *sync.Once
 )
 
 func init() {
-	roopID = 0
-	clis = make([]*mode.Clipoint, 0)
+	one = &sync.Once{}
 }
 
-func getRoopID() int {
-	roopID++
-	return roopID
+func GetClientMgr() *ClientMgr {
+	one.Do(func() {
+		cmg = &ClientMgr{
+			clis:   make([]*mode.Clipoint, 0),
+			freCtl: make(map[string]int, 0),
+		}
+	})
+	return cmg
 }
 
-func Send(md map[string]interface{}, conn netconn.WriteCloser) {
+type ClientMgr struct {
+	clis    []*mode.Clipoint
+	cliSync sync.Mutex
+	freCtl  map[string]int
+}
+
+func (c *ClientMgr) Send(md map[string]interface{}, conn netconn.WriteCloser) {
 	data, err := json.Marshal(md)
 	if err != nil {
 		log.Warn("marshal md fail", err)
@@ -35,17 +44,17 @@ func Send(md map[string]interface{}, conn netconn.WriteCloser) {
 	conn.Write(data)
 }
 
-func OnConnect(conn netconn.WriteCloser) bool {
-	c := conn.(*netconn.ServerConn)
-	nid := c.NetID()
-	addr := c.RemoteAddr()
+func (c *ClientMgr) OnConnect(conn netconn.WriteCloser) bool {
+	con := conn.(*netconn.ServerConn)
+	nid := con.NetID()
+	addr := con.RemoteAddr()
 
-	cliSync.Lock()
-	defer cliSync.Unlock()
+	c.cliSync.Lock()
+	defer c.cliSync.Unlock()
 
 	//是否已经存在，如果有，先删除
 	index := -1
-	for i, v := range clis {
+	for i, v := range c.clis {
 		if v.Addr == addr {
 			index = i
 			break
@@ -53,10 +62,10 @@ func OnConnect(conn netconn.WriteCloser) bool {
 	}
 
 	if index > 0 {
-		clis = append(clis[:index], clis[index+1:]...)
+		c.clis = append(c.clis[:index], c.clis[index+1:]...)
 	}
 
-	clis = append(clis, &mode.Clipoint{
+	c.clis = append(c.clis, &mode.Clipoint{
 		Addr: addr,
 		Conn: conn,
 		Nid:  nid,
@@ -65,17 +74,17 @@ func OnConnect(conn netconn.WriteCloser) bool {
 	return true
 }
 
-func OnClose(conn netconn.WriteCloser) {
-	c := conn.(*netconn.ServerConn)
-	nid := c.NetID()
-	addr := c.RemoteAddr()
-	log.Infof("client was close:%s, %d, %s", c.Name(), nid, c.RemoteAddr())
+func (c *ClientMgr) OnClose(conn netconn.WriteCloser) {
+	con := conn.(*netconn.ServerConn)
+	nid := con.NetID()
+	addr := con.RemoteAddr()
+	log.Infof("client was close:%s, %d, %s", con.Name(), nid, con.RemoteAddr())
 
-	cliSync.Lock()
-	defer cliSync.Unlock()
+	c.cliSync.Lock()
+	defer c.cliSync.Unlock()
 
 	index := -1
-	for i, v := range clis {
+	for i, v := range c.clis {
 		if v.Addr == addr {
 			index = i
 			break
@@ -83,11 +92,11 @@ func OnClose(conn netconn.WriteCloser) {
 	}
 
 	if index > 0 {
-		clis = append(clis[:index], clis[index+1:]...)
+		c.clis = append(c.clis[:index], c.clis[index+1:]...)
 	}
 }
 
-func OnMessage(data []byte, conn netconn.WriteCloser) {
+func (c *ClientMgr) OnMessage(data []byte, conn netconn.WriteCloser) {
 	var mapData map[string]interface{}
 	if err := json.Unmarshal(data, &mapData); err != nil {
 		log.Error("unmarshal fail,", err)
@@ -102,12 +111,16 @@ func OnMessage(data []byte, conn netconn.WriteCloser) {
 	}
 
 	switch cmd {
+	//请求服务节点
 	case "apply":
-		apply(mapData, conn)
+		c.apply(mapData, conn)
 	}
 }
 
-func apply(mapData map[string]interface{}, conn netconn.WriteCloser) {
+func (c *ClientMgr) apply(mapData map[string]interface{}, conn netconn.WriteCloser) {
+	defer conn.Close()
+
+	//获取一个服务节点
 	host := service.ApplyServiceHost()
 
 	var md map[string]interface{}
@@ -126,5 +139,5 @@ func apply(mapData map[string]interface{}, conn netconn.WriteCloser) {
 			},
 		}
 	}
-	Send(md, conn)
+	c.Send(md, conn)
 }

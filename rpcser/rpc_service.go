@@ -104,6 +104,7 @@ func (r *RpcxClis) SendDataToClient(host string, method string, args interface{}
 	}
 }
 
+//查找一个最少设备的服务节点
 func (r *RpcxClis) ApplyServiceHost() string {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
