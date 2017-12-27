@@ -22,12 +22,14 @@ func (r *RpcxMultiCli) GetMultiClient() *rpcx.Client {
 
 	if r.Client == nil {
 		r.Client = newMultiRpcxClient(r.ServiceName)
-		EtcdWatch(r.ServiceName, false, func(t int, k string, v map[string]interface{}) {
-			r.SyLock.Lock()
-			defer r.SyLock.Unlock()
-			log.Warn("client release,", k, v)
-			r.Client = nil
-		})
+		if r.Client != nil {
+			EtcdWatch(r.ServiceName, false, func(t int, k string, v map[string]interface{}) {
+				r.SyLock.Lock()
+				defer r.SyLock.Unlock()
+				log.Warn("client release,", k, v)
+				r.Client = nil
+			})
+		}
 	}
 	return r.Client
 }
@@ -58,7 +60,7 @@ func newMultiRpcxClient(sname string) *rpcx.Client {
 		return nil
 	}
 
-	client := rpcx.NewClient(clientselector.NewMultiClientSelector(servers, rpcx.RoundRobin, 10*time.Second))
+	client := rpcx.NewClient(clientselector.NewMultiClientSelector(servers, rpcx.RandomSelect, 10*time.Second))
 	if client == nil {
 		log.Warn("rpcx.NewClient fail")
 		return nil

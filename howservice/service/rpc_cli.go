@@ -25,7 +25,7 @@ func RunRpc(c mode.CallClimgr) {
 type InnerCall struct {
 }
 
-func (c *InnerCall) CallManager(md map[string]interface{}) {
+func (c *InnerCall) CallManager(isBroadcast bool, md map[string]interface{}) {
 	tmpData, err := json.Marshal(md)
 	if err != nil {
 		log.Warn("marsha data fail", err)
@@ -42,8 +42,19 @@ func (c *InnerCall) CallManager(md map[string]interface{}) {
 		log.Warn("no manager cli found")
 		return
 	}
-	if err := cli.Call(context.Background(), "howmanager.TransIn", data, &mode.TransResp{}); err != nil {
-		log.Warn("call transin fail", err)
-		return
+
+	if isBroadcast {
+		allClis := cli.ClientSelector.AllClients(cli.ClientCodecFunc)
+		for _, v := range allClis {
+			if err := v.Call(context.Background(), "howmanager.TransIn", data, &mode.TransResp{}); err != nil {
+				log.Warn("call transin fail", err)
+				continue
+			}
+		}
+	} else {
+		if err := cli.Call(context.Background(), "howmanager.TransIn", data, &mode.TransResp{}); err != nil {
+			log.Warn("call transin fail", err)
+			return
+		}
 	}
 }

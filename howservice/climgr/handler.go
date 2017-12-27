@@ -29,15 +29,15 @@ func taskHandle() {
 		for {
 			msg := <-handleChan
 
-			c := msg.conn.(*netconn.ServerConn)
-			nid := c.NetID()
+			// c := msg.conn.(*netconn.ServerConn)
+			// nid := c.NetID()
 			var mapData map[string]interface{}
 			if err := json.Unmarshal(msg.data, &mapData); err != nil {
 				log.Error("unmarshal fail,", err)
 				return
 			}
 
-			log.Debugf("nid:%d on msg:%v", nid, mapData)
+			// log.Debugf("nid:%d on msg:%v", nid, mapData)
 
 			var cmd string
 			if v, ok := mapData["cmd"].(string); ok {
@@ -132,11 +132,13 @@ func transmsg(mapData map[string]interface{}, conn netconn.WriteCloser) {
 		},
 	}
 
-	log.Debugf("trans data from:%s to:%s data:%v", fromid, toid, msgData)
+	// log.Debugf("trans data from:%s to:%s data:%v", fromid, toid, msgData)
 
 	if v, ok := cliMap[toid]; ok {
+		//manager转发
 		Send(msgData, v.Conn)
 	} else {
+		//内部转发
 		TransMsgToDev(fromid, toid, msgData)
 	}
 }
