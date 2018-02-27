@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
-	"github.com/cocobao/howfw/netconn"
 )
 
 func timeout(time.Time, interface{}) {
@@ -16,7 +14,7 @@ func timeout(time.Time, interface{}) {
 func TestTimer(t *testing.T) {
 	ctx := context.Background()
 	timerWheel := NewTimingWheel(ctx)
-	timerWheel.AddTimer(netconn.IndId(), time.Now(), 5*time.Second, &OnTimeOut{
+	timerWheel.AddTimer(time.Now(), 5*time.Second, &OnTimeOut{
 		Ctx:      ctx,
 		Callback: timeout,
 	})

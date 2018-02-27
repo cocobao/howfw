@@ -1,6 +1,8 @@
 package handle
 
 import (
+	"crypto/tls"
+
 	"github.com/cocobao/howfw/netconn"
 	"github.com/cocobao/log"
 )
@@ -22,11 +24,16 @@ func connectService(host string) {
 
 	onMessage := netconn.OnMessageOption(OnMessage)
 
+	tlsCfg := netconn.TLSCredsOption(&tls.Config{
+		InsecureSkipVerify: true,
+	})
+
 	options := []netconn.ServerOption{
 		onConnect,
 		onError,
 		onClose,
 		onMessage,
+		tlsCfg,
 		// netconn.ReconnectOption(),
 	}
 

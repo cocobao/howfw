@@ -33,6 +33,7 @@ type Config struct {
 	ServiceHost string  `yaml:"service_host"`
 	EtcdServer  EtcdCfg `yaml:"etcd_server"`
 	MongoHost   string  `yaml:"mongo_host"`
+	CerPath     string  `yaml:"cer_path"`
 }
 
 func NewConfig() (*Config, error) {

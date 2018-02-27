@@ -62,6 +62,7 @@ func (sc *ServerConn) NetID() int64 {
 	return sc.netid
 }
 
+//获取客户端连接地址
 func (sc *ServerConn) RemoteAddr() string {
 	return sc.rawConn.RemoteAddr().String()
 }

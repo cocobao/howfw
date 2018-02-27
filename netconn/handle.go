@@ -12,6 +12,7 @@ import (
 	"github.com/cocobao/log"
 )
 
+//读数据
 func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
 		rawConn          net.Conn
@@ -96,6 +97,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	}
 }
 
+//发送数据
 func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
 		rawConn net.Conn

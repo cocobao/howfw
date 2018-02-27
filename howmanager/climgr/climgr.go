@@ -1,12 +1,15 @@
 package climgr
 
 import (
+	"context"
 	"encoding/json"
 	"sync"
+	"time"
 
 	"github.com/cocobao/howfw/howmanager/service"
 	"github.com/cocobao/howfw/mode"
 	"github.com/cocobao/howfw/netconn"
+	"github.com/cocobao/howfw/util/timer"
 	"github.com/cocobao/log"
 )
 
@@ -26,6 +29,11 @@ func GetClientMgr() *ClientMgr {
 			clis:   make([]*mode.Clipoint, 0),
 			freCtl: make(map[string]int, 0),
 		}
+
+		timer.GetTimingWheel().AddTimer(time.Now(), 5*time.Second, &timer.OnTimeOut{
+			Ctx:      context.Background(),
+			Callback: cmg.OnTimer,
+		})
 	})
 	return cmg
 }
@@ -37,6 +45,36 @@ type ClientMgr struct {
 
 	//频率控制
 	freCtl map[string]int
+}
+
+//定时器检测
+func (c *ClientMgr) OnTimer(time.Time, interface{}) {
+	// fmt.Println(time.Now().Unix())
+
+	//清除频控表
+	c.cliSync.Lock()
+	if len(c.freCtl) > 0 {
+		c.freCtl = map[string]int{}
+	}
+
+	//每个ip连接不能超过5秒
+	now := time.Now().Unix()
+	var needClose []*mode.Clipoint
+	if len(c.clis) > 0 {
+		for index := len(c.clis) - 1; index > 0; index-- {
+			cli := c.clis[index]
+			if now-cli.ConTime > 5 {
+				log.Warnf("client %s link more than 5 sec")
+				needClose = append(needClose, cli)
+				c.clis = append(c.clis[:index], c.clis[index+1:]...)
+			}
+		}
+	}
+	c.cliSync.Unlock()
+
+	for _, v := range needClose {
+		v.Conn.Close()
+	}
 }
 
 func (c *ClientMgr) Send(md map[string]interface{}, conn netconn.WriteCloser) {
@@ -56,15 +94,6 @@ func (c *ClientMgr) OnConnect(conn netconn.WriteCloser) bool {
 	c.cliSync.Lock()
 	defer c.cliSync.Unlock()
 
-	if v, ok := c.freCtl[addr]; ok {
-		v++
-		c.freCtl[addr] = v
-
-		if v > 100 {
-			return false
-		}
-	}
-
 	//是否已经存在，如果有，先删除
 	index := -1
 	for i, v := range c.clis {
@@ -79,9 +108,10 @@ func (c *ClientMgr) OnConnect(conn netconn.WriteCloser) bool {
 	}
 
 	c.clis = append(c.clis, &mode.Clipoint{
-		Addr: addr,
-		Conn: conn,
-		Nid:  nid,
+		Addr:    addr,
+		Conn:    conn,
+		Nid:     nid,
+		ConTime: time.Now().Unix(),
 	})
 
 	return true
@@ -96,6 +126,11 @@ func (c *ClientMgr) OnClose(conn netconn.WriteCloser) {
 	c.cliSync.Lock()
 	defer c.cliSync.Unlock()
 
+	//删除频控
+	if _, ok := c.freCtl[addr]; ok {
+		delete(c.freCtl, addr)
+	}
+
 	index := -1
 	for i, v := range c.clis {
 		if v.Addr == addr {
@@ -103,13 +138,31 @@ func (c *ClientMgr) OnClose(conn netconn.WriteCloser) {
 			break
 		}
 	}
-
+	//删除客户端
 	if index > 0 {
 		c.clis = append(c.clis[:index], c.clis[index+1:]...)
 	}
 }
 
+//接收数据
 func (c *ClientMgr) OnMessage(data []byte, conn netconn.WriteCloser) {
+	addr := conn.(*netconn.ServerConn).RemoteAddr()
+
+	c.cliSync.Lock()
+	//频率控制
+	if v, ok := c.freCtl[addr]; ok {
+		v++
+		c.freCtl[addr] = v
+		//5秒内请求不超过一定次数
+		if v > 100 {
+			c.cliSync.Unlock()
+			log.Warn("client :%s apply too mach", addr)
+			conn.Close()
+			return
+		}
+	}
+	c.cliSync.Unlock()
+
 	var mapData map[string]interface{}
 	if err := json.Unmarshal(data, &mapData); err != nil {
 		log.Error("unmarshal fail,", err)
@@ -130,6 +183,7 @@ func (c *ClientMgr) OnMessage(data []byte, conn netconn.WriteCloser) {
 	}
 }
 
+//请求登录
 func (c *ClientMgr) apply(mapData map[string]interface{}, conn netconn.WriteCloser) {
 	defer conn.Close()
 

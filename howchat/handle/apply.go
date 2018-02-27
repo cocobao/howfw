@@ -16,6 +16,7 @@ func ApplyService(addr string) string {
 		log.Warn(err)
 		return ""
 	}
+
 	defer c.Close()
 	d, err := json.Marshal(map[string]interface{}{
 		"cmd": "apply",
@@ -70,5 +71,6 @@ func ApplyService(addr string) string {
 			return vv
 		}
 	}
+
 	return ""
 }

@@ -3,21 +3,21 @@ package timer
 import (
 	"container/heap"
 	"context"
+	"fmt"
 	"sync"
 	"time"
+)
+
+var (
+	tw   *TimingWheel
+	one  sync.Once
+	gctx context.Context
 )
 
 type OnTimeOut struct {
 	Callback func(time.Time, interface{})
 	Ctx      context.Context
 }
-
-// func NewOnTimeOut(ctx context.Context, cb func(time.Time, WriteCloser)) *OnTimeOut {
-// 	return &OnTimeOut{
-// 		Callback: cb,
-// 		Ctx:      ctx,
-// 	}
-// }
 
 type timerType struct {
 	id         int64
@@ -52,33 +52,42 @@ type TimingWheel struct {
 	cancel      context.CancelFunc
 }
 
-func NewTimingWheel(ctx context.Context) *TimingWheel {
-	timingWheel := &TimingWheel{
-		timeOutChan: make(chan *OnTimeOut, 1024),
-		timers:      make(timerHeapType, 0),
-		ticker:      time.NewTicker(500 * time.Millisecond),
-		wg:          &sync.WaitGroup{},
-		addChan:     make(chan *timerType, 1024),
-		cancelChan:  make(chan int64, 1024),
-		sizeChan:    make(chan int),
-	}
-	timingWheel.ctx, timingWheel.cancel = context.WithCancel(ctx)
-	heap.Init(&timingWheel.timers)
-	timingWheel.wg.Add(1)
-	go func() {
-		timingWheel.start()
-		timingWheel.wg.Done()
-	}()
-	return timingWheel
+func GetTimingWheel() *TimingWheel {
+	one.Do(func() {
+		tw = &TimingWheel{
+			timeOutChan: make(chan *OnTimeOut, 1024),
+			timers:      make(timerHeapType, 0),
+			ticker:      time.NewTicker(500 * time.Millisecond),
+			wg:          &sync.WaitGroup{},
+			addChan:     make(chan *timerType, 1024),
+			cancelChan:  make(chan int64, 1024),
+			sizeChan:    make(chan int),
+		}
+		gctx = context.Background()
+		tw.ctx, tw.cancel = context.WithCancel(gctx)
+		heap.Init(&tw.timers)
+		tw.wg.Add(1)
+		go func() {
+			tw.start()
+			tw.wg.Done()
+		}()
+	})
+
+	return tw
 }
 
 //增加一个定时任务
-func (tw *TimingWheel) AddTimer(id int64, when time.Time, interv time.Duration, to *OnTimeOut) {
+func (tw *TimingWheel) AddTimer(when time.Time, interv time.Duration, to *OnTimeOut) int64 {
 	if to == nil {
-		return
+		return -1
 	}
-	timer := newTimer(id, when, interv, to)
-	tw.addChan <- timer
+	id := time.Now().UnixNano()
+	t := newTimer(id, when, interv, to)
+	if tw == nil {
+		fmt.Println("(E&(*#*(*(#$*((*U#*$(*&$#(")
+	}
+	tw.addChan <- t
+	return id
 }
 
 func (tw *TimingWheel) Size() int {

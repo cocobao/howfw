@@ -77,8 +77,7 @@ func SetupRpcx(service interface{}, serviceHost string) error {
 			return err
 		}
 
-		ctx, cancel = context.WithTimeout(etcdctx, 10*time.Second)
-		etcdCli.KeepAlive(ctx, rgp.ID)
+		etcdCli.Lease.KeepAlive(etcdctx, rgp.ID)
 	}
 
 	etcdURLs := "etcd://" + etcdUserName + ":" + etcdPasswd + "@"
